@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-
 android {
     compileSdkVersion 28
    	buildToolsVersion "28.0.3"
@@ -24,10 +23,9 @@ android {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-	implementation "androidx.legacy:legacy-support-v4:1.0.0"
-	implementation "androidx.appcompat:appcompat:1.1.0"
-	implementation "androidx.recyclerview:recyclerview:1.1.0"
-	implementation "androidx.preference:preference:1.1.1"
-    api 'com.github.jiangdongguo:AndroidUSBCamera:2.3.4'
+    api "androidx.legacy:legacy-support-v4:1.0.0"
+	api "androidx.appcompat:appcompat:1.1.0"
+    api "androidx.recyclerview:recyclerview:1.1.0"
+    api "androidx.preference:preference:1.1.1"
 }
 
