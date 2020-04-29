@@ -5,6 +5,7 @@
       <module name="UsbCameraLib.app" target="1.8" />
       <module name="UsbCameraLib.common" target="1.8" />
       <module name="UsbCameraLib.libusbcamera" target="1.8" />
+      <module name="UsbCameraLib.rtmp" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>
