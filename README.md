@@ -2,4 +2,13 @@
 
 主库依赖库 https://github.com/saki4510t/libcommon
 
-此库就是依赖库
+推流库  https://github.com/begeekmyfriend/yasea
+
+
+
+
+```
+maven { url 'https://jitpack.io' }
+
+implementation 'com.github.SpeedataG:UsbCameraLib:2.4'
+```
