@@ -10,5 +10,5 @@
 ```
 maven { url 'https://jitpack.io' }
 
-implementation 'com.github.SpeedataG:UsbCameraLib:2.4'
+implementation 'com.github.SpeedataG:UsbCameraLib:2.4.1'
 ```
