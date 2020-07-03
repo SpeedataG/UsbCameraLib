@@ -38,9 +38,13 @@ public class SrsUvcPublisher {
         mUVVCCameraView.setPreviewCallback(new UVCCameraGLSurfaceView.PreviewCallback() {
             @Override
             public void onGetRgbaFrame(byte[] data, int width, int height) {
-                calcSamplingFps();
-                if (!sendAudioOnly) {
-                    mEncoder.onGetRgbaFrame(data, width, height);
+                try {
+                    calcSamplingFps();
+                    if (!sendAudioOnly) {
+                        mEncoder.onGetRgbaFrame(data, width, height);
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
             }
         });
