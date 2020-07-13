@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Leo Ma on 4/1/2016.
  */
-public class SrsEncoder {
+public class SrsEncoder implements Publisher {
     private static final String TAG = "SrsEncoder";
 
     public static final String VCODEC = "video/avc";
@@ -33,7 +33,7 @@ public class SrsEncoder {
     public static int vOutWidth = 360;   // Note: the stride of resolution must be set as 16x for hard encoding with some chip like MTK
     public static int vOutHeight = 640;  // Since Y component is quadruple size as U and V component, the stride must be set as 32x
     public static int vBitrate = 1200 * 1024;  // 1200 kbps
-    public static final int VFPS = 24;
+    public static int VFPS = 24;
     public static final int VGOP = 48;
     public static final int ASAMPLERATE = 44100;
     public static int aChannelConfig = AudioFormat.CHANNEL_IN_STEREO;
@@ -172,14 +172,16 @@ public class SrsEncoder {
         return true;
     }
 
-    public void pause(){
+    public void pause() {
         mPausetime = System.nanoTime() / 1000;
     }
-    public void resume(){
+
+    public void resume() {
         long resumeTime = (System.nanoTime() / 1000) - mPausetime;
         mPresentTimeUs = mPresentTimeUs + resumeTime;
         mPausetime = 0;
     }
+
     public void stop() {
         if (useSoftEncoder) {
             closeSoftEncoder();
@@ -190,7 +192,7 @@ public class SrsEncoder {
             Log.i(TAG, "stop aencoder");
             try {
                 aencoder.stop();
-            }catch (IllegalStateException e){
+            } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
             aencoder.release();
@@ -201,7 +203,7 @@ public class SrsEncoder {
             Log.i(TAG, "stop vencoder");
             try {
                 vencoder.stop();
-            }catch (IllegalStateException e){
+            } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
             vencoder.release();
@@ -298,7 +300,7 @@ public class SrsEncoder {
             vOutWidth = vLandscapeWidth;
             vOutHeight = vLandscapeHeight;
         }
-        
+
         // Note: the stride of resolution must be set as 16x for hard encoding with some chip like MTK
         // Since Y component is quadruple size as U and V component, the stride must be set as 32x
         if (!useSoftEncoder && (vOutWidth % 32 != 0 || vOutHeight % 32 != 0)) {
@@ -360,35 +362,31 @@ public class SrsEncoder {
     public void onGetPcmFrame(byte[] data, int size) {
         // Check video frame cache number to judge the networking situation.
         // Just cache GOP / FPS seconds data according to latency.
-        try {
-            AtomicInteger videoFrameCacheNumber = flvMuxer.getVideoFrameCacheNumber();
-            if (videoFrameCacheNumber != null && videoFrameCacheNumber.get() < VGOP) {
-                ByteBuffer[] inBuffers = aencoder.getInputBuffers();
-                ByteBuffer[] outBuffers = aencoder.getOutputBuffers();
+        AtomicInteger videoFrameCacheNumber = flvMuxer.getVideoFrameCacheNumber();
+        if (videoFrameCacheNumber != null && videoFrameCacheNumber.get() < VGOP) {
+            ByteBuffer[] inBuffers = aencoder.getInputBuffers();
+            ByteBuffer[] outBuffers = aencoder.getOutputBuffers();
 
-                int inBufferIndex = aencoder.dequeueInputBuffer(-1);
-                if (inBufferIndex >= 0) {
-                    ByteBuffer bb = inBuffers[inBufferIndex];
-                    bb.clear();
-                    bb.put(data, 0, size);
-                    long pts = System.nanoTime() / 1000 - mPresentTimeUs;
-                    aencoder.queueInputBuffer(inBufferIndex, 0, size, pts, 0);
-                }
+            int inBufferIndex = aencoder.dequeueInputBuffer(-1);
+            if (inBufferIndex >= 0) {
+                ByteBuffer bb = inBuffers[inBufferIndex];
+                bb.clear();
+                bb.put(data, 0, size);
+                long pts = System.nanoTime() / 1000 - mPresentTimeUs;
+                aencoder.queueInputBuffer(inBufferIndex, 0, size, pts, 0);
+            }
 
-                for (; ; ) {
-                    MediaCodec.BufferInfo aebi = new MediaCodec.BufferInfo();
-                    int outBufferIndex = aencoder.dequeueOutputBuffer(aebi, 0);
-                    if (outBufferIndex >= 0) {
-                        ByteBuffer bb = outBuffers[outBufferIndex];
-                        onEncodedAacFrame(bb, aebi);
-                        aencoder.releaseOutputBuffer(outBufferIndex, false);
-                    } else {
-                        break;
-                    }
+            for (; ; ) {
+                MediaCodec.BufferInfo aebi = new MediaCodec.BufferInfo();
+                int outBufferIndex = aencoder.dequeueOutputBuffer(aebi, 0);
+                if (outBufferIndex >= 0) {
+                    ByteBuffer bb = outBuffers[outBufferIndex];
+                    onEncodedAacFrame(bb, aebi);
+                    aencoder.releaseOutputBuffer(outBufferIndex, false);
+                } else {
+                    break;
                 }
             }
-        }catch (Exception e){
-            e.printStackTrace();
         }
     }
 
@@ -553,10 +551,10 @@ public class SrsEncoder {
 
     public AudioRecord chooseAudioRecord() {
         AudioRecord mic = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, SrsEncoder.ASAMPLERATE,
-            AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, getPcmBufferSize() * 4);
+                AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, getPcmBufferSize() * 4);
         if (mic.getState() != AudioRecord.STATE_INITIALIZED) {
             mic = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, SrsEncoder.ASAMPLERATE,
-                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, getPcmBufferSize() * 4);
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, getPcmBufferSize() * 4);
             if (mic.getState() != AudioRecord.STATE_INITIALIZED) {
                 mic = null;
             } else {
@@ -571,7 +569,7 @@ public class SrsEncoder {
 
     private int getPcmBufferSize() {
         int pcmBufSize = AudioRecord.getMinBufferSize(ASAMPLERATE, AudioFormat.CHANNEL_IN_STEREO,
-            AudioFormat.ENCODING_PCM_16BIT) + 8191;
+                AudioFormat.ENCODING_PCM_16BIT) + 8191;
         return pcmBufSize - (pcmBufSize % 8192);
     }
 
@@ -637,24 +635,55 @@ public class SrsEncoder {
     }
 
     private native void setEncoderResolution(int outWidth, int outHeight);
+
     private native void setEncoderFps(int fps);
+
     private native void setEncoderGop(int gop);
+
     private native void setEncoderBitrate(int bitrate);
+
     private native void setEncoderPreset(String preset);
+
     private native byte[] RGBAToI420(byte[] frame, int width, int height, boolean flip, int rotate);
+
     private native byte[] RGBAToNV12(byte[] frame, int width, int height, boolean flip, int rotate);
-    private native byte[] ARGBToI420Scaled(int[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y,int crop_width, int crop_height);
-    private native byte[] ARGBToNV12Scaled(int[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y,int crop_width, int crop_height);
+
+    private native byte[] ARGBToI420Scaled(int[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y, int crop_width, int crop_height);
+
+    private native byte[] ARGBToNV12Scaled(int[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y, int crop_width, int crop_height);
+
     private native byte[] ARGBToI420(int[] frame, int width, int height, boolean flip, int rotate);
+
     private native byte[] ARGBToNV12(int[] frame, int width, int height, boolean flip, int rotate);
-    private native byte[] NV21ToNV12Scaled(byte[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y,int crop_width, int crop_height);
-    private native byte[] NV21ToI420Scaled(byte[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y,int crop_width, int crop_height);
+
+    private native byte[] NV21ToNV12Scaled(byte[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y, int crop_width, int crop_height);
+
+    private native byte[] NV21ToI420Scaled(byte[] frame, int width, int height, boolean flip, int rotate, int crop_x, int crop_y, int crop_width, int crop_height);
+
     private native int RGBASoftEncode(byte[] frame, int width, int height, boolean flip, int rotate, long pts);
+
     private native boolean openSoftEncoder();
+
     private native void closeSoftEncoder();
 
     static {
         System.loadLibrary("yuv");
         System.loadLibrary("enc");
+    }
+
+    @Override
+    public void setFps(int fps) {
+        VFPS = fps;
+    }
+
+    @Override
+    public void setBitRate(int bit) {
+        vBitrate = bit;
+    }
+
+    @Override
+    public void setResolution(int width, int height) {
+        vOutWidth = width;
+        vOutHeight = height;
     }
 }

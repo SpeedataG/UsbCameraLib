@@ -14,7 +14,7 @@ import java.io.File;
 /**
  * Created by YoungWu on 19/7/5.
  */
-public class SrsUvcPublisher {
+public class SrsUvcPublisher implements Publisher {
     private static final String TAG = "UVCPublisher";
 
     private static AudioRecord mic;
@@ -38,13 +38,9 @@ public class SrsUvcPublisher {
         mUVVCCameraView.setPreviewCallback(new UVCCameraGLSurfaceView.PreviewCallback() {
             @Override
             public void onGetRgbaFrame(byte[] data, int width, int height) {
-                try {
-                    calcSamplingFps();
-                    if (!sendAudioOnly) {
-                        mEncoder.onGetRgbaFrame(data, width, height);
-                    }
-                }catch (Exception e){
-                    e.printStackTrace();
+                calcSamplingFps();
+                if (!sendAudioOnly) {
+                    mEncoder.onGetRgbaFrame(data, width, height);
                 }
             }
         });
@@ -358,5 +354,20 @@ public class SrsUvcPublisher {
 
     public void setErrorCallback(UVCCameraGLSurfaceView.ErrorCallback errorCallback) {
         mUVVCCameraView.setErrorCallback(errorCallback);
+    }
+
+    @Override
+    public void setFps(int fps) {
+        mEncoder.setFps(fps);
+    }
+
+    @Override
+    public void setBitRate(int bit) {
+        mEncoder.setBitRate(bit);
+    }
+
+    @Override
+    public void setResolution(int width, int height) {
+        mEncoder.setResolution(width, height);
     }
 }
